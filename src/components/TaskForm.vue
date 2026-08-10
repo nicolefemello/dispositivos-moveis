@@ -63,9 +63,9 @@ const newTask = ref('')
 const previewUrl = ref(null)
 const imgAttachmentKey = ref(null)
 const uploading = ref(false)
-// const isMobileDevice = ref(
-//   /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
-// )
+const isMobileDevice = ref(
+  /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+)
 // const isMobileDevice = ref(!window.matchMedia('(pointer: fine)').matches)
 
 watch(

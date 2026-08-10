@@ -24,9 +24,19 @@ export const useTasksStore = defineStore('tasks', () => {
     }
   }
 
-  async function addTask(payload) {
-    if (!payload.title?.trim()) return
+  async function addTask({ title, imgAttachmentKey } = {}) {
+    if (!title?.trim()) return
+
     error.value = null
+
+    const payload = {
+      title: title.trim(),
+    }
+
+    if (imgAttachmentKey != null) {
+      payload.img_attachment_key = imgAttachmentKey
+    }
+
     try {
       const response = await tasksApi.create(payload)
       tasks.value.push(response.data)
