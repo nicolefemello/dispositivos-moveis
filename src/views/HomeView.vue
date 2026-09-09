@@ -4,9 +4,14 @@
 
     <TaskForm
       :editing-task="editingTask"
+      :location="location"
+      :location-loading="loadingLocation"
+      :location-error="locationError"
       @add="handleAdd"
       @update="handleUpdate"
       @cancel="handleCancel"
+      @request-location="handleGetLocation"
+      @location-selected="setLocation"
     />
 
     <p v-if="store.loading" class="loading-message">Carregando tarefas...</p>
@@ -40,7 +45,6 @@
         Nenhuma tarefa cadastrada. Adicione uma acima.
       </p>
     </template>
-
     <InstallButton />
   </div>
 </template>
@@ -50,10 +54,22 @@ import { onMounted, ref } from 'vue'
 import TaskForm from '../components/TaskForm.vue'
 import TaskItem from '../components/TaskItem.vue'
 import InstallButton from '../components/InstallButton.vue'
+import geocodingApi from '../api/geocodingApi.js'
+import { useGeolocation } from '../composables/useGeolocation.js'
 import { useTasksStore } from '../stores/tasks.js'
 
 const store = useTasksStore()
 const editingTask = ref(null)
+const {
+  location,
+  loadingLocation,
+  locationError,
+  requestCurrentLocation,
+  setLocationLabel,
+  setLocation,
+  setLocationFromTask,
+  clearLocation,
+} = useGeolocation()
 
 onMounted(() => {
   store.fetchTasks()
@@ -61,19 +77,23 @@ onMounted(() => {
 
 function handleAdd(payload) {
   store.addTask(payload)
+  clearLocation()
 }
 
-function handleUpdate(id, title, imgAttachmentKey) {
-  store.updateTask(id, { title, imgAttachmentKey })
+function handleUpdate(id, title, imgAttachmentKey, taskLocation) {
+  store.updateTask(id, { title, imgAttachmentKey, location: taskLocation })
   editingTask.value = null
+  clearLocation()
 }
 
 function handleCancel() {
   editingTask.value = null
+  clearLocation()
 }
 
 function handleEdit(task) {
   editingTask.value = task
+  setLocationFromTask(task)
 }
 
 function handleToggle(id) {
@@ -83,6 +103,18 @@ function handleToggle(id) {
 function handleRemove(id) {
   if (editingTask.value?.id === id) editingTask.value = null
   store.removeTask(id)
+}
+
+async function handleGetLocation() {
+  const captured = await requestCurrentLocation()
+  if (!captured) return
+
+  try {
+    const address = await geocodingApi.reverse(captured.latitude, captured.longitude)
+    setLocationLabel(address?.label)
+  } catch {
+    locationError.value = 'Localização obtida, mas não foi possível identificar a rua.'
+  }
 }
 </script>
 

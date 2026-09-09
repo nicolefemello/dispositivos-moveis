@@ -44,11 +44,39 @@
 
       <CameraCapture v-if="showCameraCapture" @captured="handleCameraCapture" />
     </div>
+
+    <div class="location-section">
+      <div>
+        <strong>Localização da tarefa</strong>
+        <p v-if="location" class="location-label">
+          {{ location.label || 'Localização atual selecionada' }}
+        </p>
+        <p v-else class="location-label">Nenhuma localização selecionada</p>
+      </div>
+      <button
+        type="button"
+        class="task-button-secondary"
+        :disabled="locationLoading"
+        @click="emit('request-location')"
+      >
+        {{
+          locationLoading
+            ? 'Obtendo...'
+            : location
+              ? 'Atualizar localização'
+              : 'Usar localização atual'
+        }}
+      </button>
+    </div>
+    <p v-if="locationError" class="location-error">{{ locationError }}</p>
+    <TaskLocationMap :location="location" @location-selected="emit('location-selected', $event)" />
   </form>
 </template>
 
 <script setup>
 import { ref, watch } from 'vue'
+import CameraCapture from './CameraCapture.vue'
+import TaskLocationMap from './TaskLocationMap.vue'
 import tasksApi from '../api/tasksApi.js'
 
 const props = defineProps({
@@ -56,17 +84,26 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  location: {
+    type: Object,
+    default: null,
+  },
+  locationLoading: {
+    type: Boolean,
+    default: false,
+  },
+  locationError: {
+    type: String,
+    default: '',
+  },
 })
 
-const emit = defineEmits(['add', 'update', 'cancel'])
+const emit = defineEmits(['add', 'update', 'cancel', 'request-location', 'location-selected'])
 const newTask = ref('')
 const previewUrl = ref(null)
 const imgAttachmentKey = ref(null)
 const uploading = ref(false)
-const isMobileDevice = ref(
-  /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
-)
-// const isMobileDevice = ref(!window.matchMedia('(pointer: fine)').matches)
+const showCameraCapture = ref(false)
 
 watch(
   () => props.editingTask,
@@ -119,10 +156,17 @@ function handleSubmit() {
   const payload = {
     title: newTask.value.trim(),
     imgAttachmentKey: imgAttachmentKey.value,
+    location: props.location,
   }
 
   if (props.editingTask) {
-    emit('update', props.editingTask.id, newTask.value.trim(), imgAttachmentKey.value)
+    emit(
+      'update',
+      props.editingTask.id,
+      newTask.value.trim(),
+      imgAttachmentKey.value,
+      props.location,
+    )
   } else {
     emit('add', payload)
   }
@@ -185,6 +229,30 @@ function handleCancel() {
 .task-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.location-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px dashed #ccc;
+  border-radius: 8px;
+  background: #f8f9fa;
+}
+
+.location-label {
+  margin-top: 4px;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.location-error {
+  margin-top: 6px;
+  color: #c0392b;
+  font-size: 0.85rem;
 }
 
 .task-button-cancel {

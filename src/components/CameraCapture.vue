@@ -38,7 +38,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 const emit = defineEmits(['captured'])
 
@@ -52,6 +52,11 @@ let stream = null
 
 async function startCamera() {
   error.value = null
+  if (!navigator.mediaDevices?.getUserMedia) {
+    error.value = 'A câmera exige HTTPS ou localhost neste navegador.'
+    return
+  }
+
   try {
     stream = await navigator.mediaDevices.getUserMedia({
       video: {
@@ -119,6 +124,9 @@ function stopCamera() {
   capturedFile.value = null
   captured.value = false
 }
+
+onMounted(startCamera)
+onBeforeUnmount(stopCamera)
 </script>
 
 <style scoped>

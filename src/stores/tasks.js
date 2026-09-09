@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import tasksApi from '../api/tasksApi.js'
+import { buildLocationPayload } from '../utils/locations.js'
 
 export const useTasksStore = defineStore('tasks', () => {
   const tasks = ref([])
@@ -24,7 +25,7 @@ export const useTasksStore = defineStore('tasks', () => {
     }
   }
 
-  async function addTask({ title, imgAttachmentKey } = {}) {
+  async function addTask({ title, imgAttachmentKey, location } = {}) {
     if (!title?.trim()) return
 
     error.value = null
@@ -36,6 +37,7 @@ export const useTasksStore = defineStore('tasks', () => {
     if (imgAttachmentKey != null) {
       payload.img_attachment_key = imgAttachmentKey
     }
+    Object.assign(payload, buildLocationPayload(location))
 
     try {
       const response = await tasksApi.create(payload)
@@ -71,12 +73,13 @@ export const useTasksStore = defineStore('tasks', () => {
     }
   }
 
-  async function updateTask(id, { title, imgAttachmentKey } = {}) {
+  async function updateTask(id, { title, imgAttachmentKey, location } = {}) {
     if (title !== undefined && !title.trim()) return
     error.value = null
     const payload = {}
     if (title !== undefined) payload.title = title.trim()
     if (imgAttachmentKey != null) payload.img_attachment_key = imgAttachmentKey
+    if (location !== undefined) Object.assign(payload, buildLocationPayload(location))
     try {
       const response = await tasksApi.update(id, payload)
       const index = tasks.value.findIndex((t) => t.id === id)
